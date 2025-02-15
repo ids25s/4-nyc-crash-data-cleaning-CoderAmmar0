@@ -287,7 +287,7 @@ na_zip_code_count
 
 ```
 
-## G
+## PART G
 Are there missing in zip_code and borough? Do they always co-occur?
 
 ```{python}
@@ -330,7 +330,7 @@ missing_zip_borough_geo_non_missing_count
 
 ```
 
-Seems like all cases have the geo location values so lets update them.
+Seems like 370 cases have the geo location values so lets update them.
 ```{python}
 from opencage.geocoder import OpenCageGeocode
 import time
@@ -446,3 +446,66 @@ Despite unexpected challenges, this approach provided a reliable way to fill
 in missing boroughs and ZIP codes.
 
 
+## Part I
+Is it redundant to keep both location and the longitude/latitude at the NYC Open Data server?
+
+Storing both location and latitude/longitude can be redundant since location 
+is derived from the other two. However, keeping it improves usability for 
+different users and tools. Removing location would save space, but retaining 
+it adds convenience for analysis and accessibility.
+
+
+## Part J
+Check the frequency of crash_time by hour. Is there a matter of bad luck at exactly midnight? How would you interpret this?
+
+```{python}
+# Convert crash_time to datetime format to extract hour
+df['crash_time'] = pd.to_datetime(df['crash_time'], format='%H:%M', errors='coerce')
+
+# Extract hour from crash_time
+df['crash_hour'] = df['crash_time'].dt.hour
+
+# Count occurrences of crashes by hour
+crash_hour_counts = df['crash_hour'].value_counts().sort_index()
+
+crash_hour_counts 
+```
+
+The spike in crashes at midnight (00:00) is likely due to fatigue, nightlife-
+related driving, shift changes, and potential data entry defaults. The 
+increase around 16:00 (4 PM) may be linked to the afternoon rush hour and 
+workers heading home. Both times indicate higher-risk driving conditions.
+
+## Part K
+Are the number of persons killed/injured the summation of the numbers of pedestrians, cyclist, and motorists killed/injured? If so, is it redundant to keep these two columns at the NYC Open Data server?
+
+```{python}
+# Check if the total number of persons killed is the sum of pedestrians, cyclists, and motorists killed
+df["calculated_persons_killed"] = (
+    df["number_of_pedestrians_killed"].fillna(0) +
+    df["number_of_cyclist_killed"].fillna(0) +
+    df["number_of_motorist_killed"].fillna(0)
+)
+
+df["calculated_persons_injured"] = (
+    df["number_of_pedestrians_injured"].fillna(0) +
+    df["number_of_cyclist_injured"].fillna(0) +
+    df["number_of_motorist_injured"].fillna(0)
+)
+
+# Check if the values match the provided total persons killed/injured columns
+killed_match = (df["calculated_persons_killed"] == df["number_of_persons_killed"]).all()
+injured_match = (df["calculated_persons_injured"] == df["number_of_persons_injured"]).all()
+
+killed_match, injured_match
+
+```
+
+The "persons killed" column matches the sum of pedestrians, cyclists, and 
+motorists killed, but the "persons injured" column does not fully align. This 
+may indicate data inconsistencies or additional factors. NYC Open Data may 
+retain these columns for validation, easier aggregation, or quick access to 
+totals. The mismatch in injuries suggests both columns provide useful 
+information.
+
+## Part I
