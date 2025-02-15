@@ -332,6 +332,7 @@ missing_zip_borough_geo_non_missing_count
 
 Seems like 370 cases have the geo location values so lets update them.
 ```{python}
+
 from opencage.geocoder import OpenCageGeocode
 import time
 # OpenCage API Key 
@@ -508,4 +509,30 @@ retain these columns for validation, easier aggregation, or quick access to
 totals. The mismatch in injuries suggests both columns provide useful 
 information.
 
-## Part I
+## Part L
+Print the whole frequency table of contributing_factor_vehicle_1. Convert lower cases to uppercases and check the frequencies again.
+
+ ```{python}
+ 
+# Print the entire frequency table
+print(df["contributing_factor_vehicle_1"].value_counts().to_string())
+
+ ```
+
+ Now changing to Uppercase:
+ ```{python}
+ # Convert values in "contributing_factor_vehicle_1" to uppercase
+df["contributing_factor_vehicle_1"] = df["contributing_factor_vehicle_1"].astype(str).str.upper()
+
+# Print the entire frequency table
+print(df["contributing_factor_vehicle_1"].value_counts().to_string())
+
+ ```
+The most common contributing factor in crashes is "UNSPECIFIED" (423 cases), 
+followed by "DRIVER INATTENTION/DISTRACTION" (404 cases) and "FAILURE TO YIELD 
+RIGHT-OF-WAY" (109 cases). This suggests that inattentiveness and failure to 
+follow right-of-way rules are significant contributors to accidents, while 
+many cases lack specific attributions.
+
+
+
