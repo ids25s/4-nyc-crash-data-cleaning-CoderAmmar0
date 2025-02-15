@@ -1,5 +1,5 @@
 ---
-title: "Homework Assignment 4"
+title: "Homework Assignment 4 (NYC Crash Data Cleaning)"
 author: "Ammar Alsadadi"
 toc: true
 number-sections: true
@@ -16,3 +16,144 @@ format:
       - left=20mm
 ##  docx: Never, unless to accommodate a collaborator
 ---
+# Context
+
+## Overview
+
+The Motor Vehicle Collisions dataset contains details on crashes in NYC. Each 
+row represents a crash event reported by the NYPD. The data includes 
+occurrences of injuries, fatalities, and location details. Reports are required
+when an injury, fatality, or at least $1000 in damage occurs.
+
+## Historical Context
+
+The NYPD launched TrafficStat in 1998 to track fatal incidents. In 1999, the 
+Traffic Accident Management System (TAMS) improved data collection. Vision Zero
+began in 2014 to reduce fatalities, and in 2016, FORMS replaced TAMS, allowing 
+officers to record crash data electronically.
+
+## Data Dictionary
+
+| Column Name                         | Description                                | Data Type            |
+|--------------------------------------|--------------------------------------------|----------------------|
+| **CRASH DATE**                      | Date of collision occurrence              | Floating Timestamp  |
+| **CRASH TIME**                      | Time of collision occurrence              | Text               |
+| **BOROUGH**                          | Borough where collision occurred          | Text               |
+| **ZIP CODE**                         | Postal code of incident                   | Text               |
+| **LATITUDE**                         | Latitude coordinate                       | Number             |
+| **LONGITUDE**                        | Longitude coordinate                      | Number             |
+| **LOCATION**                         | Latitude, Longitude pair                  | Location           |
+| **ON STREET NAME**                   | Street where the collision occurred       | Text               |
+| **CROSS STREET NAME**                | Nearest cross street to the collision     | Text               |
+| **OFF STREET NAME**                  | Street address if known                   | Text               |
+| **NUMBER OF PERSONS INJURED**        | Number of persons injured                 | Number             |
+| **NUMBER OF PERSONS KILLED**         | Number of persons killed                  | Number             |
+| **NUMBER OF PEDESTRIANS INJURED**    | Number of pedestrians injured             | Number             |
+| **NUMBER OF PEDESTRIANS KILLED**     | Number of pedestrians killed              | Number             |
+| **NUMBER OF CYCLISTS INJURED**       | Number of cyclists injured                | Number             |
+| **NUMBER OF CYCLISTS KILLED**        | Number of cyclists killed                 | Number             |
+| **NUMBER OF MOTORISTS INJURED**      | Number of motorists injured               | Number             |
+| **NUMBER OF MOTORISTS KILLED**       | Number of motorists killed                | Number             |
+| **CONTRIBUTING FACTOR VEHICLE 1**    | Contributing factor for vehicle 1         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 2**    | Contributing factor for vehicle 2         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 3**    | Contributing factor for vehicle 3         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 4**    | Contributing factor for vehicle 4         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 5**    | Contributing factor for vehicle 5         | Text               |
+| **UNIQUE KEY**                       | Unique identifier for each crash event    | Text               |
+| **VEHICLE TYPE CODE 1**              | Vehicle type code for vehicle 1           | Text               |
+| **VEHICLE TYPE CODE 2**              | Vehicle type code for vehicle 2           | Text               |
+| **VEHICLE TYPE CODE 3**              | Vehicle type code for vehicle 3           | Text               |
+| **VEHICLE TYPE CODE 4**              | Vehicle type code for vehicle 4           | Text               |
+| **VEHICLE TYPE CODE 5**              | Vehicle type code for vehicle 5           | Text               |
+
+
+# Exlploring data
+
+## Exploring
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path1 = "C:/Users/Ammar/Downloads/Motor_Vehicle_Collisions_-_Crashes_20250214.csv"
+
+df1 = pd.read_csv(file_path1)
+
+# Display basic info about the dataset
+df_info = df1.info()
+
+# Show first few rows
+df_head = df1.head()
+
+# Check for missing values
+missing_values = df1.isnull().sum()
+
+df1_info, df1_head, missing_values
+
+```
+
+### Dataset Overview
+
+- **Total Records**: 2,155,718
+- **Total Columns**: 29
+- **Data Type Warning**: Mixed types due to inconsistent entries
+- **Missing Values:**
+  - **BOROUGH**: Around 31% missing
+  - **ZIP CODE**: Around 31% missing
+  - **VEHICLE TYPE CODE 3-5**: Mostly empty
+- **Key Issues Identified:**
+  - **Geographical Data**: Significant missing values in boroughs, zip codes, and coordinates
+  - **Vehicle & Contributing Factors**: Sparse data for secondary vehicle details
+  - **Time Format**: **CRASH DATE** & **CRASH TIME** require conversion to datetime format
+
+# Solving Questions
+
+## Part A
+1. Use the filter on the website to obtain crash data for the week of June 30, 2024, in CSV format.
+   
+2. Open a terminal or command prompt and run to create data directory:
+     ```{bash}
+     mkdir data
+     ```
+
+3. Navigate to your downloads folder and move the file to `data/`:
+     ```{bash}
+     mv "C:\Users\Ammar\Downloads\Motor_Vehicle_Collisions_-_Crashes_06302024.csv" data/
+     ```
+
+4. Rename the file to make it more informative:
+     ```{bash}
+     mv data/Motor_Vehicle_Collisions_-_Crashes_06302024.csv 
+        data/nyccrashes_2024w0630_by20240916.csv
+     ```
+
+5. Commit the data directory to repo:
+     ```{bash}
+     git add data/
+     git commit -m "Added data directory"
+     git push origin main
+     ```
+
+## Part B
+Clean up the variable names. Use lower cases and replace spaces with underscores.
+
+Standardizing column names improves data consistency and simplifies 
+manipulation. I convert names to lowercase and replace spaces with 
+underscores for easier access and readability.
+
+
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path1 = "C:/Users/Ammar/ids-s25/4-nyc-crash-data-cleaning-CoderAmmar0/data/nyccrashes_2024w0630_by20250212.csv"
+
+df = pd.read_csv(file_path)
+
+# Convert column names to lowercase and replace spaces with underscores
+df.columns = df.columns.str.lower().str.replace(" ", "_")
+
+# Display cleaned column names
+df.columns
+```
+
+## Part C
