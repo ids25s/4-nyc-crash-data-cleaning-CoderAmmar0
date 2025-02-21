@@ -1,0 +1,555 @@
+---
+title: "Homework Assignment 4 (NYC Crash Data Cleaning)"
+author: "Ammar Alsadadi"
+toc: true
+number-sections: true
+highlight-style: pygments
+format: 
+  html: 
+    code-fold: true
+    html-math-method: katex
+    embed-resources: true
+    self-contained-math: true	
+  pdf: 
+    geometry: 
+      - top=30mm
+      - left=20mm
+##  docx: Never, unless to accommodate a collaborator
+---
+# Context
+
+## Overview
+
+The Motor Vehicle Collisions dataset contains details on crashes in NYC. Each 
+row represents a crash event reported by the NYPD. The data includes 
+occurrences of injuries, fatalities, and location details. Reports are required
+when an injury, fatality, or at least $1000 in damage occurs.
+
+## Historical Context
+
+The NYPD launched TrafficStat in 1998 to track fatal incidents. In 1999, the 
+Traffic Accident Management System (TAMS) improved data collection. Vision Zero
+began in 2014 to reduce fatalities, and in 2016, FORMS replaced TAMS, allowing 
+officers to record crash data electronically.
+
+## Data Dictionary
+
+| Column Name                         | Description                                | Data Type            |
+|--------------------------------------|--------------------------------------------|----------------------|
+| **CRASH DATE**                      | Date of collision occurrence              | Floating Timestamp  |
+| **CRASH TIME**                      | Time of collision occurrence              | Text               |
+| **BOROUGH**                          | Borough where collision occurred          | Text               |
+| **ZIP CODE**                         | Postal code of incident                   | Text               |
+| **LATITUDE**                         | Latitude coordinate                       | Number             |
+| **LONGITUDE**                        | Longitude coordinate                      | Number             |
+| **LOCATION**                         | Latitude, Longitude pair                  | Location           |
+| **ON STREET NAME**                   | Street where the collision occurred       | Text               |
+| **CROSS STREET NAME**                | Nearest cross street to the collision     | Text               |
+| **OFF STREET NAME**                  | Street address if known                   | Text               |
+| **NUMBER OF PERSONS INJURED**        | Number of persons injured                 | Number             |
+| **NUMBER OF PERSONS KILLED**         | Number of persons killed                  | Number             |
+| **NUMBER OF PEDESTRIANS INJURED**    | Number of pedestrians injured             | Number             |
+| **NUMBER OF PEDESTRIANS KILLED**     | Number of pedestrians killed              | Number             |
+| **NUMBER OF CYCLISTS INJURED**       | Number of cyclists injured                | Number             |
+| **NUMBER OF CYCLISTS KILLED**        | Number of cyclists killed                 | Number             |
+| **NUMBER OF MOTORISTS INJURED**      | Number of motorists injured               | Number             |
+| **NUMBER OF MOTORISTS KILLED**       | Number of motorists killed                | Number             |
+| **CONTRIBUTING FACTOR VEHICLE 1**    | Contributing factor for vehicle 1         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 2**    | Contributing factor for vehicle 2         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 3**    | Contributing factor for vehicle 3         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 4**    | Contributing factor for vehicle 4         | Text               |
+| **CONTRIBUTING FACTOR VEHICLE 5**    | Contributing factor for vehicle 5         | Text               |
+| **UNIQUE KEY**                       | Unique identifier for each crash event    | Text               |
+| **VEHICLE TYPE CODE 1**              | Vehicle type code for vehicle 1           | Text               |
+| **VEHICLE TYPE CODE 2**              | Vehicle type code for vehicle 2           | Text               |
+| **VEHICLE TYPE CODE 3**              | Vehicle type code for vehicle 3           | Text               |
+| **VEHICLE TYPE CODE 4**              | Vehicle type code for vehicle 4           | Text               |
+| **VEHICLE TYPE CODE 5**              | Vehicle type code for vehicle 5           | Text               |
+
+
+# Exlploring data
+
+## Exploring
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path1 = "C:/Users/Ammar/Downloads/Motor_Vehicle_Collisions_-_Crashes_20250214.csv"
+
+df1 = pd.read_csv(file_path1)
+
+# Display basic info about the dataset
+df1_info = df1.info()
+
+# Show first few rows
+df1_head = df1.head()
+
+# Check for missing values
+missing_values1 = df1.isnull().sum()
+
+df1_info, df1_head, missing_values1
+
+```
+
+### Dataset Overview
+
+- **Total Records**: 2,155,718
+- **Total Columns**: 29
+- **Data Type Warning**: Mixed types due to inconsistent entries
+- **Missing Values:**
+  - **BOROUGH**: Around 31% missing
+  - **ZIP CODE**: Around 31% missing
+  - **VEHICLE TYPE CODE 3-5**: Mostly empty
+- **Key Issues Identified:**
+  - **Geographical Data**: Significant missing values in boroughs, zip codes, and coordinates
+  - **Vehicle & Contributing Factors**: Sparse data for secondary vehicle details
+  - **Time Format**: **CRASH DATE** & **CRASH TIME** require conversion to datetime format
+
+# Solving Questions
+
+## Part A
+1. Use the filter on the website to obtain crash data for the week of June 30, 2024, in CSV format.
+   
+2. Open a terminal or command prompt and run to create data directory:
+     ```{bash}
+     mkdir data
+     ```
+
+3. Navigate to your downloads folder and move the file to `data/`:
+     ```{bash}
+     mv "C:\Users\Ammar\Downloads\Motor_Vehicle_Collisions_-_Crashes_06302024.csv" data/
+     ```
+
+4. Rename the file to make it more informative:
+     ```{bash}
+     mv data/Motor_Vehicle_Collisions_-_Crashes_06302024.csv 
+        data/nyccrashes_2024w0630_by20240916.csv
+     ```
+
+5. Commit the data directory to repo:
+     ```{bash}
+     git add data/
+     git commit -m "Added data directory"
+     git push origin main
+     ```
+
+## Part B
+Clean up the variable names. Use lower cases and replace spaces with underscores.
+
+Standardizing column names improves data consistency and simplifies 
+manipulation. I convert names to lowercase and replace spaces with 
+underscores for easier access and readability.
+
+
+```{python}
+import pandas as pd
+
+# Load the dataset
+file_path = "C:/Users/Ammar/ids-s25/4-nyc-crash-data-cleaning-CoderAmmar0/data/nyccrashes_2024w0630_by20250212.csv"
+
+df = pd.read_csv(file_path)
+
+# Convert column names to lowercase and replace spaces with underscores
+df.columns = df.columns.str.lower().str.replace(" ", "_")
+
+# Display cleaned column names
+df.columns
+```
+
+## Part C
+Check the crash date and time to see if they really match the filter we intented. Remove the extra rows if needed.
+
+```{python}
+# Checking the unique crash dates
+unique_crash_dates = df["crash_date"].unique()
+
+# Display unique crash dates
+unique_crash_dates
+```
+
+Seems like the following Sunday is included in the dataset(7/07) so I will remove it.
+```{python}
+
+# Filter out crashes that occurred on 07/07/2024
+df = df[df["crash_date"] != "07/07/2024"]
+
+# Checking the unique crash dates again
+unique_crash_dates_filtered = df["crash_date"].unique()
+
+# Display the updated unique crash dates
+unique_crash_dates_filtered
+```
+
+## Part D
+Get the basic summaries of each variables: missing percentage; descriptive statistics for continuous variables; frequency tables for discrete variables.
+```{python}
+
+import numpy as np
+
+# Calculate missing percentage for each column
+missing_percentage = df.isnull().sum() / len(df) * 100
+
+# Get descriptive statistics for continuous variables
+continuous_vars = df.select_dtypes(include=[np.number]).describe()
+
+# Get frequency tables for discrete (categorical) variables
+categorical_vars = df.select_dtypes(include=['object'])
+frequency_tables = {col: categorical_vars[col].value_counts() for col in categorical_vars.columns}
+
+# Create a DataFrame for missing percentages
+missing_df = pd.DataFrame(missing_percentage, columns=["missing_percentage"])
+
+# Display the missing percentage summary
+print("Missing Percentage Summary:")
+print(missing_df)
+
+# Display descriptive statistics for continuous variables
+print("\nDescriptive Statistics for Continuous Variables:")
+print(continuous_vars)
+
+# Display frequency tables for categorical variables
+print("\nFrequency Tables for Categorical Variables:")
+for col, freq_table in frequency_tables.items():
+    print(f"\n{col}:\n{freq_table}")
+```
+Looking at the dataset, I noticed that many columns have missing values, 
+especially for borough (28%), cross street names (49%), and off-street names 
+(71%). There are also a lot of missing entries for contributing factors and 
+vehicle types beyond the second vehicle, which suggests that most crashes 
+involved only one or two vehicles. This could make it harder to analyze 
+multi-vehicle crashes accurately.
+
+In terms of injuries, most crashes didn’t result in fatalities, but injuries 
+were fairly common, with motorists being the most affected, followed by 
+pedestrians and cyclists. Brooklyn had the highest number of crashes, and 
+driver inattention/distraction was the most frequently reported cause, though 
+many records simply list "Unspecified." Sedans and SUVs were by far the most 
+common vehicle types involved in crashes, which makes sense given their high 
+presence on NYC roads.
+
+It seems like the dataset has some gaps in reporting, which could affect 
+deeper analysis and limit the accuracy of certain insights.
+
+
+## Part E
+Are their invalid longitude and latitude in the data? If so, replace them with NA.
+
+Lets check for blank and 0 values:
+```{python}
+# Check for null values in latitude and longitude columns
+null_lat_long = df[['latitude', 'longitude']].isnull().sum()
+
+# Check for zero values in latitude and longitude columns
+zero_lat_long = (df[['latitude', 'longitude']] == 0).sum()
+
+# Display results
+null_lat_long, zero_lat_long
+```
+There is 117 rows with blank values and 3 with values of 0 so lets replace them.
+```{python}
+# Replace zero values and blank values with "NA" 
+df.loc[df['latitude'] == 0, 'latitude'] = "NA"
+df.loc[df['longitude'] == 0, 'longitude'] = "NA"
+df.loc[df['latitude'].isnull(),'latitude'] = "NA"
+df.loc[df['longitude'].isnull(), 'longitude'] = "NA"
+
+# Check for the number of "NA" values in latitude and longitude columns
+na_lat_long_count = ((df['latitude'] == "NA") | (df['longitude'] == "NA")).sum()
+
+# Display the count of "NA" values
+na_lat_long_count
+
+```
+## Part F
+Are there zip_code values that are not legit NYC zip codes? If so, replace them with NA
+
+Lets check for blank values:
+```{python}
+# Check for null values in zip_code column
+null_zip_code_count = df['zip_code'].isnull().sum()
+
+# Display the number of null zip code values
+null_zip_code_count
+
+```
+
+There is 477 blank values so lets replace them.
+
+```{python}
+# Replace null values in zip_code column with "NA" 
+df.loc[df['zip_code'].isnull(), 'zip_code'] = "NA"
+
+# Check if the null values were replaced by "NA"
+na_zip_code_count = (df['zip_code'] == "NA").sum()
+
+# Display the count of "NA" 
+na_zip_code_count
+
+```
+
+## PART G
+Are there missing in zip_code and borough? Do they always co-occur?
+
+```{python}
+# Check if zip_code is "NA" and borough is null (Since we didn't change it yet to NA)
+missing_both_together = (df['zip_code'] == "NA") & df['borough'].isnull()
+
+# Count rows where zip_code is "NA" and borough is null
+missing_both_together_count = missing_both_together.sum()
+
+missing_both_together_count
+
+```
+They seem to co-occur, lets replace null values with NA for borough:
+
+```{python}
+# Replace null values in borough column with "NA" 
+df.loc[df['borough'].isnull(), 'borough'] = "NA"
+
+# Check if the null values were replaced by "NA"
+na_borough_count = (df['borough'] == "NA").sum()
+
+# Display the count of "NA" 
+na_borough_count
+```
+
+## Part H
+Are there cases where zip_code and borough are missing but the geo codes are not missing? If so, fill in zip_code and borough using the geo codes.
+
+```{python}
+missing_zip_borough_geo_non_missing = ((df['zip_code'] == "NA") & 
+                                       (df['borough'] == "NA") & 
+                                       (df['latitude'] != "NA") & 
+                                       (df['longitude'] != "NA"))
+
+# Count rows where zip_code and borough are "NA" but geo codes are not missing
+missing_zip_borough_geo_non_missing_count = missing_zip_borough_geo_non_missing.sum()
+
+# Display the count of such cases
+missing_zip_borough_geo_non_missing_count
+
+```
+
+Seems like 370 cases have the geo location values so lets update them.
+```{python}
+
+from opencage.geocoder import OpenCageGeocode
+import time
+# OpenCage API Key 
+OPENCAGE_API_KEY = "8aad513ae943450db91e1c27f80a08ea"
+geocoder = OpenCageGeocode(OPENCAGE_API_KEY)
+
+# Ensure latitude and longitude are numeric (convert and handle errors)
+def convert_to_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        return None  # Return None for invalid values
+
+df['latitude'] = df['latitude'].apply(convert_to_float)
+df['longitude'] = df['longitude'].apply(convert_to_float)
+
+# Function for reverse geocoding using only "county" and mapping it to borough names
+def get_location_info(lat, lon, retries=3, delay=2):
+    if lat is None or lon is None:  # Skip if invalid coordinates
+        return "NA", "NA"
+    
+    for _ in range(retries):
+        try:
+            result = geocoder.reverse_geocode(lat, lon)
+            if result:
+                components = result[0]["components"]
+                zip_code = components.get("postcode", "NA")
+                
+                # Extract county from OpenCage response
+                county = components.get("county", "NA")
+
+                # Map county names to boroughs
+                borough_map = {
+                    "New York County": "Manhattan",
+                    "Kings County": "Brooklyn",
+                    "Bronx County": "Bronx",
+                    "Queens County": "Queens",
+                    "Richmond County": "Staten Island"
+                }
+                borough = borough_map.get(county, county)  # Convert county to borough name if applicable
+                
+                return borough, zip_code
+        except Exception as e:
+            print(f"Error: {e}, retrying...")
+            time.sleep(delay)
+    
+    return "NA", "NA"
+
+# Find rows where ZIP code and borough are missing but latitude/longitude are available
+missing_geo = (df['zip_code'] == "NA") & (df['borough'] == "NA") & df['latitude'].notnull() & df['longitude'].notnull()
+
+# Apply reverse geocoding
+for index, row in df.loc[missing_geo].iterrows():
+    borough, zip_code = get_location_info(row['latitude'], row['longitude'])
+    df.at[index, 'borough'] = borough  # Store mapped borough
+    df.at[index, 'zip_code'] = zip_code
+
+#Check the data if changed
+df.head(20)
+```
+### Filling Missing Boroughs and ZIP Codes
+
+I initially tried filling missing boroughs and ZIP codes using latitude and 
+longitude by matching existing values within the dataset or using a geocoding 
+API. However, multiple challenges made this more complex than expected.
+
+### First Attempt: Dataset Mapping
+
+I rounded latitude and longitude to two decimal places and used the most 
+frequent ZIP code and borough for each coordinate pair. While this worked in 
+some cases, issues arose:
+
+- Some lat/lon points mapped to multiple ZIP codes, causing incorrect 
+  assignments.
+- Certain locations were missing entirely in the dataset.
+- The most frequent ZIP code wasn't always accurate.
+
+### Second Attempt: Nominatim API
+
+I then used the Nominatim API (OpenStreetMap's geocoder), but it had issues:
+
+- Slow response times and frequent timeouts.
+- Rate limits blocked requests after a few queries.
+
+### Third Attempt: OpenCage Geocoder
+
+OpenCage was more stable, but it labeled boroughs as counties, returning only 
+"New York" for many locations. However, I found that boroughs were stored 
+under "county," which led to the final solution.
+
+### Final Fix: Using County Data
+
+I extracted the "county" field and mapped it to boroughs:
+
+- New York County → Manhattan
+- Kings County → Brooklyn
+- Bronx County → Bronx
+- Queens County → Queens
+- Richmond County → Staten Island
+
+This method successfully assigned missing boroughs and ZIP codes accurately.
+
+### Lessons Learned
+
+- Internal dataset mapping can help but has limitations.
+- API responses vary in format, requiring careful inspection.
+- Rate limits and timeouts need handling when using geocoders.
+- Sometimes, useful data exists in unexpected fields, like "county" instead of 
+  "borough."
+
+Despite unexpected challenges, this approach provided a reliable way to fill 
+in missing boroughs and ZIP codes.
+
+
+## Part I
+Is it redundant to keep both location and the longitude/latitude at the NYC Open Data server?
+
+Storing both location and latitude/longitude can be redundant since location 
+is derived from the other two. However, keeping it improves usability for 
+different users and tools. Removing location would save space, but retaining 
+it adds convenience for analysis and accessibility.
+
+
+## Part J
+Check the frequency of crash_time by hour. Is there a matter of bad luck at exactly midnight? How would you interpret this?
+
+```{python}
+# Convert crash_time to datetime format to extract hour
+df['crash_time'] = pd.to_datetime(df['crash_time'], format='%H:%M', errors='coerce')
+
+# Extract hour from crash_time
+df['crash_hour'] = df['crash_time'].dt.hour
+
+# Count occurrences of crashes by hour
+crash_hour_counts = df['crash_hour'].value_counts().sort_index()
+
+crash_hour_counts 
+```
+
+The spike in crashes at midnight (00:00) is likely due to fatigue, nightlife-
+related driving, shift changes, and potential data entry defaults. The 
+increase around 16:00 (4 PM) may be linked to the afternoon rush hour and 
+workers heading home. Both times indicate higher-risk driving conditions.
+
+## Part K
+Are the number of persons killed/injured the summation of the numbers of pedestrians, cyclist, and motorists killed/injured? If so, is it redundant to keep these two columns at the NYC Open Data server?
+
+```{python}
+# Check if the total number of persons killed is the sum of pedestrians, cyclists, and motorists killed
+df["calculated_persons_killed"] = (
+    df["number_of_pedestrians_killed"].fillna(0) +
+    df["number_of_cyclist_killed"].fillna(0) +
+    df["number_of_motorist_killed"].fillna(0)
+)
+
+df["calculated_persons_injured"] = (
+    df["number_of_pedestrians_injured"].fillna(0) +
+    df["number_of_cyclist_injured"].fillna(0) +
+    df["number_of_motorist_injured"].fillna(0)
+)
+
+# Check if the values match the provided total persons killed/injured columns
+killed_match = (df["calculated_persons_killed"] == df["number_of_persons_killed"]).all()
+injured_match = (df["calculated_persons_injured"] == df["number_of_persons_injured"]).all()
+
+killed_match, injured_match
+
+```
+
+The "persons killed" column matches the sum of pedestrians, cyclists, and 
+motorists killed, but the "persons injured" column does not fully align. This 
+may indicate data inconsistencies or additional factors. NYC Open Data may 
+retain these columns for validation, easier aggregation, or quick access to 
+totals. The mismatch in injuries suggests both columns provide useful 
+information.
+
+## Part L
+Print the whole frequency table of contributing_factor_vehicle_1. Convert lower cases to uppercases and check the frequencies again.
+
+ ```{python}
+ 
+# Print the entire frequency table
+print(df["contributing_factor_vehicle_1"].value_counts().to_string())
+
+ ```
+
+ Now changing to Uppercase:
+ ```{python}
+ # Convert values in "contributing_factor_vehicle_1" to uppercase
+df["contributing_factor_vehicle_1"] = df["contributing_factor_vehicle_1"].astype(str).str.upper()
+
+# Print the entire frequency table
+print(df["contributing_factor_vehicle_1"].value_counts().to_string())
+
+ ```
+The most common contributing factor in crashes is "UNSPECIFIED" (423 cases), 
+followed by "DRIVER INATTENTION/DISTRACTION" (404 cases) and "FAILURE TO YIELD 
+RIGHT-OF-WAY" (109 cases). This suggests that inattentiveness and failure to 
+follow right-of-way rules are significant contributors to accidents, while 
+many cases lack specific attributions.
+
+
+## Part M
+ Provided an opportunity to meet the data provider, what suggestions would you make based on your data exploration experience?
+If I had the chance to meet the data provider, I would recommend:
+
+- Reducing Missing or Unspecified Data: Encouraging detailed reporting 
+and refining data collection methods could improve accuracy.
+- Clarifying Injury Data: Investigating why total injuries don't fully 
+match pedestrian, cyclist, and motorist counts could enhance reliability.
+- Standardizing Formatting: Enforcing uniform capitalization and 
+structured input methods would improve consistency in categorical data.
+- Improving Location Accuracy: Addressing missing or incorrect latitude, 
+longitude, and borough data would benefit spatial analysis.
+- Providing Context on Data Collection: Clear documentation on how 
+factors like injuries and contributing causes are determined would help 
+analysts interpret data correctly.
+
+These enhancements could improve data quality, making it more valuable for 
+policy decisions and public safety initiatives.
